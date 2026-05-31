@@ -18,6 +18,17 @@ export default async function handler(req, res) {
       });
     }
 
+    const fullPrompt = `
+${prompt}
+
+IMPORTANT OUTPUT RULES:
+Do not give a short answer.
+Generate a complete, detailed result.
+Use clear headings and bullet points.
+For listing generation, include title options, bullet points, short description, long description, backend keywords, customer profile, and SEO tips.
+Minimum length: 800 words unless the user specifically asks for something shorter.
+`;
+
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
       {
@@ -26,12 +37,12 @@ export default async function handler(req, res) {
         body: JSON.stringify({
           contents: [
             {
-              parts: [{ text: prompt }]
+              parts: [{ text: fullPrompt }]
             }
           ],
           generationConfig: {
-            temperature: 0.7,
-            maxOutputTokens: 4096
+            temperature: 0.8,
+            maxOutputTokens: 8192
           }
         })
       }
@@ -46,6 +57,12 @@ export default async function handler(req, res) {
     }
 
     const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+
+    if (!text) {
+      return res.status(500).json({
+        error: 'Gemini returned an empty response'
+      });
+    }
 
     return res.status(200).json({ text });
   } catch (error) {
