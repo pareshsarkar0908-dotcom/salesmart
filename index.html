@@ -2976,13 +2976,13 @@ async function startCheckout(){
 }
 
 async function createRazorpayOrder(plan, customer){
+  const planKey = Object.keys(PLANS).find(key => PLANS[key] === plan) || 'starter';
+
   const res = await fetch('/api/create-order', {
     method: 'POST',
     headers: {'Content-Type':'application/json'},
     body: JSON.stringify({
-      amount: plan.amount * 100,
-      currency: 'INR',
-      plan,
+      plan: planKey,
       customer
     })
   });
@@ -2993,7 +2993,14 @@ async function createRazorpayOrder(plan, customer){
     throw new Error(data.error || 'Could not create Razorpay order');
   }
 
-  return data;
+  return {
+    id: data.orderId,
+    amount: data.amount,
+    currency: data.currency,
+    keyId: data.keyId,
+    plan: data.plan,
+    credits: data.credits
+  };
 }
 
 async function verifyRazorpayPayment(response){
