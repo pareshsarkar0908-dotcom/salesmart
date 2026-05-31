@@ -3037,11 +3037,13 @@ async function saveOrderToSupabase(order){
     razorpay_order_id: order.razorpay_order_id || order.orderId || ''
   };
 
-  const { error } = await supabaseClient.from('orders').insert(row);
+  const result = await supabaseClient
+    .from('orders')
+    .insert(row);
 
-  if(error){
-    console.error('Supabase order save error:', error);
-    showStatus('checkoutNote','Payment successful, but order could not be saved: ' + error.message);
+  if(result.error){
+    console.error('Supabase order save error:', result.error);
+    showStatus('checkoutNote','Payment successful, but order could not be saved: ' + result.error.message);
     return null;
   }
 
