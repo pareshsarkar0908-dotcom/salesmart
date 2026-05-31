@@ -25,7 +25,15 @@ IMPORTANT OUTPUT RULES:
 Do not give a short answer.
 Generate a complete, detailed result.
 Use clear headings and bullet points.
-For listing generation, include title options, bullet points, short description, long description, backend keywords, customer profile, and SEO tips.
+For listing generation, include:
+1. 5 optimized title options
+2. 5 bullet points
+3. Short product description
+4. Long product description
+5. Backend search keywords
+6. Target customer profile
+7. Marketplace SEO tips
+
 Minimum length: 800 words unless the user specifically asks for something shorter.
 `;
 
