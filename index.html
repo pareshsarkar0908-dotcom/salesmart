@@ -3156,32 +3156,46 @@ async function loadCreditBalanceFromSupabase(email){
 }
 
 async function handleSignup(){
-  const email = document.getElementById('loginEmail').value.trim();
-  const pw = document.getElementById('loginPassword').value.trim();
+  const name = document.getElementById('signupName').value.trim();
+  const email = document.getElementById('signupEmail').value.trim();
+  const pw = document.getElementById('signupPassword').value.trim();
 
-  if(!email || !pw){
-    showStatus('loginNote','Please enter your email and password.');
+  if(!name || !email || !pw){
+    showStatus('signupNote','Please enter your name, email, and password.');
+    return;
+  }
+
+  if(pw.length < 6){
+    showStatus('signupNote','Password must be at least 6 characters.');
     return;
   }
 
   if(!supabaseClient){
-    showStatus('loginNote','Please connect Supabase first.');
+    showStatus('signupNote','Please connect Supabase first.');
     return;
   }
 
   const { error } = await supabaseClient.auth.signUp({
     email,
-    password: pw
+    password: pw,
+    options: {
+      data: { full_name: name }
+    }
   });
 
   if(error){
-    showStatus('loginNote', error.message);
+    showStatus('signupNote', error.message);
     return;
   }
 
-  setCurrentEmail(email);
-  await loadCreditBalanceFromSupabase(email);
-  showStatus('loginNote','✓ Account created. You are logged in. You can now claim the free trial.');
+  showStatus('signupNote','✓ Account created. You can now log in with your email and password.');
+
+  document.getElementById('loginEmail').value = email;
+  document.getElementById('loginPassword').value = '';
+
+  setTimeout(() => {
+    location.hash = '#login';
+  }, 1200);
 }
 
 async function handleLogin(){
