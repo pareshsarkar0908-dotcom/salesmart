@@ -2132,22 +2132,33 @@ function requireCredits(outId, cost, toolName){
 }
 async function logCreditUsage(toolName, cost){
   if(!supabaseClient) return;
-  await supabaseClient.from('usage_logs').insert({
+
+  const result = await supabaseClient.from('usage_logs').insert({
     tool: toolName,
     credits_used: cost,
     balance_after: getCredits(),
     device_id: getDeviceId()
-  }).catch(() => null);
+  });
+
+  if(result.error){
+    console.error('Supabase usage log error:', result.error);
+  }
+
   await saveCreditBalanceToSupabase(getCurrentEmail());
 }
 async function saveCreditBalanceToSupabase(email){
   if(!supabaseClient || !email) return;
-  await supabaseClient.from('credits').upsert({
+
+  const result = await supabaseClient.from('credits').upsert({
     email: normalizeEmail(email),
     balance: getCredits(),
     device_id: getDeviceId(),
     updated_at: new Date().toISOString()
-  }, {onConflict: 'email'}).catch(() => null);
+  }, {onConflict: 'email'});
+
+  if(result.error){
+    console.error('Supabase credit balance error:', result.error);
+  }
 }
 
 /* ═══════════════════════════════════════════════════════════════════ */
