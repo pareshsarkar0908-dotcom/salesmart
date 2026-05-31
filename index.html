@@ -1654,9 +1654,9 @@ footer{background:var(--bg2);border-top:1px solid var(--border);padding:60px 0 3
         <input class="form-input" id="loginPassword" type="password" placeholder="••••••••"/>
       </div>
     <button class="btn-run" onclick="handleLogin()">Log In →</button>
-<button class="btn-ghost-sm" onclick="handleSignup()" style="margin-top:12px;width:100%;justify-content:center;">
+<a class="btn-ghost-sm" href="#signup" style="display:block;text-align:center;margin-top:12px;width:100%;">
   Create Account →
-</button>
+</a>
 <div class="status-msg" id="loginNote"></div>
      <p style="text-align:center;margin-top:20px;font-size:13.5px;color:var(--text3)">
   New user? Enter your email and password, then click <strong>Create Account</strong>.
@@ -1664,7 +1664,40 @@ footer{background:var(--bg2);border-top:1px solid var(--border);padding:60px 0 3
     </div>
   </div>
 </section>
+<!-- ╔══ SIGNUP ═══════════════════════════════════════════════════════╗ -->
+<section class="section" id="signup">
+  <div class="wrap-sm">
+    <div class="reveal" style="text-align:center;margin-bottom:36px">
+      <div class="eyebrow">Create Account</div>
+      <h2 class="s-title" style="font-size:38px">Create your account.</h2>
+      <p style="font-size:14.5px;color:var(--text2);margin-top:8px">Create an account to claim free credits and access your purchased credits.</p>
+    </div>
 
+    <div class="app-card reveal" style="transition-delay:.06s">
+      <div class="form-group">
+        <label class="form-label">Full Name</label>
+        <input class="form-input" id="signupName" placeholder="Your full name"/>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Email</label>
+        <input class="form-input" id="signupEmail" type="email" placeholder="you@example.com"/>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Create Password</label>
+        <input class="form-input" id="signupPassword" type="password" placeholder="Minimum 6 characters"/>
+      </div>
+
+      <button class="btn-run" onclick="handleSignup()">Create Account →</button>
+      <div class="status-msg" id="signupNote"></div>
+
+      <p style="text-align:center;margin-top:20px;font-size:13.5px;color:var(--text3)">
+        Already have an account? <a href="#login" style="color:var(--accent2);font-weight:700">Log in →</a>
+      </p>
+    </div>
+  </div>
+</section>
 <!-- ╔══ FAQ ════════════════════════════════════════════════════════════╗ -->
 <section class="section" id="faq">
   <div class="wrap">
