@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head><!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=AW-18200043019"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'AW-18200043019');
+  gtag('config', 'G-21FMG24M78');
+</script>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Orders - SaleSmart AI</title>
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg"><link rel="stylesheet" href="assets/styles.css?v=20260601c">
+  <script src="assets/config.js?v=20260601c"></script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="assets/app.js?v=20260601c" defer></script>
+</head>
+<body>
+  <header class="topbar"><div class="wrap nav"><a class="brand" href="index.html"><span class="mark">S</span>SaleSmart AI</a><nav class="links"><a href="index.html">Tools</a><a href="account.html">Account</a><a class="active" href="orders.html">Orders</a><a href="pricing.html">Pricing</a><a href="legal.html">Legal</a><a href="contact.html">Contact</a></nav><div class="actions"><span class="pill" data-auth="in">Credits: <strong data-credit>0</strong></span><button class="btn menu-btn" onclick="toggleMobileMenu()">Menu</button></div></div></header>
+  <div class="mobile-drawer" id="mobileDrawer"><a class="btn" href="index.html">Tools</a><a class="btn" href="account.html">Account</a><a class="btn" href="orders.html">Orders</a><a class="btn" href="pricing.html">Pricing</a><button class="btn danger" data-auth="in" onclick="logout()">Logout</button></div>
+  <main class="page"><div class="wrap">
+    <div class="eyebrow">Orders</div><h1>Payment history.</h1><p class="lead">View paid plans, credits, payment IDs, dates, and trial claims for your logged-in account.</p>
+    <section class="card" style="margin-top:28px;overflow:auto">
+      <table class="table"><thead><tr><th>Date</th><th>Plan</th><th>Amount</th><th>Credits</th><th>Status</th><th>Payment / Order ID</th></tr></thead><tbody id="ordersBody"><tr><td colspan="6">Loading...</td></tr></tbody></table>
+    </section>
+  </div></main>
+</body>
+</html>
