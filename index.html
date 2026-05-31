@@ -1963,7 +1963,29 @@ function initSupabase(){
 }
 function toggleApiSetupFromHash(){
   const panel = document.getElementById('apiNotice');
-  if(panel) panel.style.display = location.hash === '#api-setup' ? '' : 'none';
+  if(!panel) return;
+
+  if(location.hash !== '#api-setup'){
+    panel.style.display = 'none';
+    return;
+  }
+
+  const unlocked = sessionStorage.getItem('salesmart_admin_unlocked') === '1';
+
+  if(unlocked){
+    panel.style.display = '';
+    return;
+  }
+
+  const password = prompt('Enter admin password');
+
+  if(password === 'Dark@009'){
+    sessionStorage.setItem('salesmart_admin_unlocked', '1');
+    panel.style.display = '';
+  } else {
+    panel.style.display = 'none';
+    history.replaceState(null, '', location.pathname + location.search);
+  }
 }
 if(GEMINI_API_KEY){
   document.getElementById('apiKeyStatus').innerHTML = '<span style="color:var(--green)">✓ Gemini API key loaded from browser storage.</span>';
