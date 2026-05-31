@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SaleSmart AI App</title>
+  <link rel="stylesheet" href="assets/styles.css">
+  <script src="assets/config.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="assets/app.js" defer></script>
+</head>
+<body>
+  <header class="topbar"><div class="wrap nav">
+    <a class="brand" href="index.html"><span class="mark">S</span>SaleSmart AI</a>
+    <nav class="links"><a class="active" href="index.html">Tools</a><a href="account.html">Account</a><a href="orders.html">Orders</a><a href="pricing.html">Pricing</a><a href="legal.html">Legal</a><a href="contact.html">Contact</a></nav>
+    <div class="actions"><span class="pill" data-auth="in">Credits: <strong data-credit>0</strong></span><a class="btn" data-auth="out" href="account.html">Log in</a><a class="btn primary" data-auth="out" href="signup.html">Create account</a><a class="btn" data-auth="in" href="account.html">Account</a><button class="btn danger" data-auth="in" onclick="logout()">Logout</button><button class="btn menu-btn" onclick="toggleMobileMenu()">Menu</button></div>
+  </div></header>
+  <div class="mobile-drawer" id="mobileDrawer"><a class="btn" href="index.html">Tools</a><a class="btn" href="account.html">Account</a><a class="btn" href="orders.html">Orders</a><a class="btn" href="pricing.html">Pricing</a><a class="btn" href="legal.html">Legal</a><a class="btn" href="contact.html">Contact</a><button class="btn danger" data-auth="in" onclick="logout()">Logout</button></div>
+  <main class="page"><div class="wrap">
+    <section class="hero">
+      <div>
+        <div class="eyebrow">Seller Workspace</div>
+        <h1>Your ecommerce AI tools.</h1>
+        <p class="lead">Generate marketplace-ready listings, keywords, review insights, multilingual content, and ROI notes from one signed-in workspace.</p>
+      </div>
+      <div class="card">
+        <h3>Account Credits</h3>
+        <p class="muted">Signed in as <span data-email>Not signed in</span></p>
+        <div class="stat"><span class="faint">Available credits</span><strong data-credit>0</strong></div>
+        <p class="muted" data-auth="out">Create an account to claim your free trial.</p>
+      </div>
+    </section>
+    <section class="page">
+      <div class="tool-layout">
+        <div class="card">
+          <div class="eyebrow">AI Tool</div>
+          <div class="form">
+            <div><label>Tool Type</label><select id="toolType"><option value="listing">Listing Generator</option><option value="research">Product Research</option><option value="review">Review Analyzer</option><option value="keywords">SEO Keywords</option><option value="score">Listing Score</option><option value="multilingual">Multilingual Content</option><option value="roi">ROI Planner</option></select></div>
+            <div><label>Product or Topic</label><input id="productName" placeholder="Example: Organic green tea"></div>
+            <div><label>Details</label><textarea id="productDetails" placeholder="Features, marketplace, target audience, price, language, or any notes"></textarea></div>
+            <button class="btn primary" onclick="generateAI()">Generate with AI</button>
+            <div class="notice" id="toolNote"></div>
+          </div>
+        </div>
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:14px"><h3>Output</h3><button class="btn" onclick="copyOutput()">Copy</button></div>
+          <div class="output" id="toolOutput">Your generated result will appear here.</div>
+        </div>
+      </div>
+    </section>
+  </div></main>
+  <footer class="footer"><div class="wrap"><span>SaleSmart AI</span><span><a href="legal.html">Privacy</a> · <a href="legal.html#terms">Terms</a> · <a href="legal.html#refund">Refund</a></span></div></footer>
+</body>
+</html>
