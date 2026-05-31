@@ -13,25 +13,36 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Prompt is required' });
   }
 
+  const modelList = [
+    process.env.GEMINI_MODEL,
+    'gemini-2.5-flash',
+    'gemini-2.0-flash'
+  ].filter(Boolean);
+
   try {
-    const response = await fetch(
-      `const model = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+    let data = {};
+    let response = null;
 
-const response = await fetch(
-  `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ role: 'user', parts: [{ text: prompt }] }],
-          generationConfig: { temperature: 0.7, maxOutputTokens: 1800 }
-        })
-      }
-    );
+    for (const model of modelList) {
+      response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ role: 'user', parts: [{ text: prompt }] }],
+            generationConfig: { temperature: 0.7, maxOutputTokens: 1800 }
+          })
+        }
+      );
 
-    const data = await response.json().catch(() => ({}));
-    if (!response.ok) {
-      return res.status(response.status).json({
+      data = await response.json().catch(() => ({}));
+      if (response.ok) break;
+      if (response.status !== 404) break;
+    }
+
+    if (!response?.ok) {
+      return res.status(response?.status || 500).json({
         error: data?.error?.message || 'Gemini request failed'
       });
     }
