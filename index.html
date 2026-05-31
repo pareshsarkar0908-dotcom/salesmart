@@ -1653,11 +1653,14 @@ footer{background:var(--bg2);border-top:1px solid var(--border);padding:60px 0 3
         <label class="form-label">Password</label>
         <input class="form-input" id="loginPassword" type="password" placeholder="••••••••"/>
       </div>
-      <button class="btn-run" onclick="handleLogin()">Log In →</button>
-      <div class="status-msg" id="loginNote"></div>
-      <p style="text-align:center;margin-top:20px;font-size:13.5px;color:var(--text3)">
-        Don't have an account? <a href="#pricing" style="color:var(--accent2);font-weight:700">Buy credits to get started →</a>
-      </p>
+    <button class="btn-run" onclick="handleLogin()">Log In →</button>
+<button class="btn-ghost-sm" onclick="handleSignup()" style="margin-top:12px;width:100%;justify-content:center;">
+  Create Account →
+</button>
+<div class="status-msg" id="loginNote"></div>
+     <p style="text-align:center;margin-top:20px;font-size:13.5px;color:var(--text3)">
+  New user? Enter your email and password, then click <strong>Create Account</strong>.
+</p>
     </div>
   </div>
 </section>
@@ -2949,8 +2952,20 @@ async function startCheckout(){
   const key = document.getElementById('checkoutPlan').value;
   const p = PLANS[key];
   if(!name||!email||!phone){showStatus('checkoutNote','Please fill in your name, email and phone number.');return;}
-  setCurrentEmail(email);
-  if(p.trial){
+
+const loggedInEmail = getCurrentEmail();
+
+if(p.trial){
+  if(!loggedInEmail){
+    showStatus('checkoutNote','Please create an account or log in before claiming the free trial.');
+    document.getElementById('login')?.scrollIntoView({behavior:'smooth'});
+    return;
+  }
+
+  if(normalizeEmail(email) !== loggedInEmail){
+    showStatus('checkoutNote','Use the same email you logged in with to claim the free trial.');
+    return;
+  }
     const claimedInSupabase = await hasTrialBeenClaimedInSupabase(email);
     if(hasTrialBeenClaimed(email) || claimedInSupabase){
       showStatus('checkoutNote','This free trial has already been claimed for this email or device. Please log in or choose a credit pack.');
@@ -3085,16 +3100,86 @@ async function saveOrderToSupabase(order){
 }
 
 /* ── Login ───────────────────────────────────────────────────────── */
+async function loadCreditBalanceFromSupabase(email){
+  if(!supabaseClient || !email) return;
+
+  const result = await supabaseClient
+    .from('credits')
+    .select('balance')
+    .eq('email', normalizeEmail(email))
+    .limit(1);
+
+  if(result.error){
+    console.error('Supabase credit load error:', result.error);
+    return;
+  }
+
+  const balance = result.data?.[0]?.balance;
+
+  if(typeof balance === 'number'){
+    setCredits(balance);
+    updateCreditDisplay();
+  }
+}
+
+async function handleSignup(){
+  const email = document.getElementById('loginEmail').value.trim();
+  const pw = document.getElementById('loginPassword').value.trim();
+
+  if(!email || !pw){
+    showStatus('loginNote','Please enter your email and password.');
+    return;
+  }
+
+  if(!supabaseClient){
+    showStatus('loginNote','Please connect Supabase first.');
+    return;
+  }
+
+  const { error } = await supabaseClient.auth.signUp({
+    email,
+    password: pw
+  });
+
+  if(error){
+    showStatus('loginNote', error.message);
+    return;
+  }
+
+  setCurrentEmail(email);
+  await loadCreditBalanceFromSupabase(email);
+  showStatus('loginNote','✓ Account created. You are logged in. You can now claim the free trial.');
+}
+
 async function handleLogin(){
   const email = document.getElementById('loginEmail').value.trim();
   const pw = document.getElementById('loginPassword').value.trim();
-  if(!email||!pw){showStatus('loginNote','Please enter your email and password.');return;}
-  if(!supabaseClient){showStatus('loginNote','Please add your Supabase URL and anon key in the API settings above.');return;}
+
+  if(!email || !pw){
+    showStatus('loginNote','Please enter your email and password.');
+    return;
+  }
+
+  if(!supabaseClient){
+    showStatus('loginNote','Please add your Supabase URL and anon key in the API settings above.');
+    return;
+  }
+
   showStatus('loginNote','Signing in with Supabase...');
-  const {error} = await supabaseClient.auth.signInWithPassword({email, password: pw});
-  if(error){showStatus('loginNote', error.message);return;}
+
+  const { error } = await supabaseClient.auth.signInWithPassword({
+    email,
+    password: pw
+  });
+
+  if(error){
+    showStatus('loginNote', error.message);
+    return;
+  }
+
   setCurrentEmail(email);
-  showStatus('loginNote','✓ Logged in successfully.');
+  await loadCreditBalanceFromSupabase(email);
+  showStatus('loginNote','✓ Logged in successfully. Your credits are loaded.');
 }
 
 /* ── Contact ─────────────────────────────────────────────────────── */
