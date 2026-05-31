@@ -2976,18 +2976,41 @@ async function startCheckout(){
 }
 
 async function createRazorpayOrder(plan, customer){
-  if(!supabaseClient) return null;
-  const {data, error} = await supabaseClient.functions.invoke('create-razorpay-order', {
-    body: {amount: plan.amount * 100, currency: 'INR', plan, customer}
+  const res = await fetch('/api/create-order', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({
+      amount: plan.amount * 100,
+      currency: 'INR',
+      plan,
+      customer
+    })
   });
-  if(error) throw error;
+
+  const data = await res.json().catch(() => ({}));
+
+  if(!res.ok){
+    throw new Error(data.error || 'Could not create Razorpay order');
+  }
+
   return data;
 }
 
 async function verifyRazorpayPayment(response){
-  if(!supabaseClient || !response.razorpay_signature) return null;
-  const {data, error} = await supabaseClient.functions.invoke('verify-razorpay-payment', {body: response});
-  if(error) throw error;
+  if(!response || !response.razorpay_signature) return null;
+
+  const res = await fetch('/api/verify-payment', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify(response)
+  });
+
+  const data = await res.json().catch(() => ({}));
+
+  if(!res.ok){
+    throw new Error(data.error || 'Could not verify Razorpay payment');
+  }
+
   return data;
 }
 
