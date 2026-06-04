@@ -1,0 +1,18 @@
+Upload every file in this folder to the root of your GitHub/Vercel project.
+Keep your existing api/ folder with gemini.js, create-order.js, and verify-payment.js.
+Also add api/admin-summary.js if you want the private admin dashboard.
+Edit assets/config.js and add only public frontend keys:
+- Supabase Project URL
+- Supabase publishable/anon key
+- Razorpay key ID
+Never put Gemini API key, Razorpay secret, or Supabase service role key in config.js.
+For admin dashboard, add these Vercel environment variables:
+- ADMIN_PASSWORD
+- SUPABASE_URL
+- SUPABASE_SERVICE_ROLE_KEY
+For AI generation and payments, add these Vercel environment variables:
+- GEMINI_API_KEY
+- RAZORPAY_KEY_ID
+- RAZORPAY_KEY_SECRET
+
+For RLS, run supabase-rls-policies.sql in Supabase SQL Editor.

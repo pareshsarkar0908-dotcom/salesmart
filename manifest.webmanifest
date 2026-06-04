@@ -1,0 +1,25 @@
+{
+  "name": "SaleSmart AI",
+  "short_name": "SaleSmart",
+  "description": "AI ecommerce tools for product listings, marketplace SEO keywords, review insights, multilingual content, and ROI planning.",
+  "start_url": "/index.html",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#06080b",
+  "theme_color": "#7567ff",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/assets/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/assets/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
