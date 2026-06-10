@@ -1,13 +1,63 @@
+import crypto from 'node:crypto';
+
+const attempts = new Map();
+const MAX_ATTEMPTS = 5;
+const WINDOW_MS = 15 * 60 * 1000;
+
+function getIp(req) {
+  return (
+    req.headers['x-forwarded-for']?.split(',')[0]?.trim() ||
+    req.headers['x-real-ip'] ||
+    'unknown'
+  );
+}
+
+function isRateLimited(ip) {
+  const now = Date.now();
+  const entry = attempts.get(ip) || { count: 0, windowStart: now };
+  if (now - entry.windowStart > WINDOW_MS) {
+    attempts.set(ip, { count: 1, windowStart: now });
+    return false;
+  }
+  if (entry.count >= MAX_ATTEMPTS) return true;
+  entry.count += 1;
+  attempts.set(ip, entry);
+  return false;
+}
+
+function clearAttempts(ip) {
+  attempts.delete(ip);
+}
+
+function timingSafeEqual(a, b) {
+  const bufA = Buffer.from(String(a));
+  const bufB = Buffer.from(String(b));
+  if (bufA.length !== bufB.length) {
+    crypto.timingSafeEqual(bufA, bufA);
+    return false;
+  }
+  return crypto.timingSafeEqual(bufA, bufB);
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { password } = req.body || {};
+  const ip = getIp(req);
+  if (isRateLimited(ip)) {
+    return res.status(429).json({ error: 'Too many attempts. Try again in 15 minutes.' });
+  }
 
-  if (!process.env.ADMIN_PASSWORD || password !== process.env.ADMIN_PASSWORD) {
+  const { password } = req.body || {};
+  const adminPassword = process.env.ADMIN_PASSWORD || '';
+
+  if (!adminPassword || !password || !timingSafeEqual(password, adminPassword)) {
+    await new Promise(r => setTimeout(r, 500 + Math.random() * 500));
     return res.status(401).json({ error: 'Unauthorized' });
   }
+
+  clearAttempts(ip);
 
   const supabaseUrl = process.env.SUPABASE_URL;
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
