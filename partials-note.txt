@@ -1,18 +1,28 @@
-Upload every file in this folder to the root of your GitHub/Vercel project.
-Keep your existing api/ folder with gemini.js, create-order.js, and verify-payment.js.
-Also add api/admin-summary.js if you want the private admin dashboard.
-Edit assets/config.js and add only public frontend keys:
-- Supabase Project URL
-- Supabase publishable/anon key
-- Razorpay key ID
-Never put Gemini API key, Razorpay secret, or Supabase service role key in config.js.
-For admin dashboard, add these Vercel environment variables:
-- ADMIN_PASSWORD
-- SUPABASE_URL
-- SUPABASE_SERVICE_ROLE_KEY
-For AI generation and payments, add these Vercel environment variables:
-- GEMINI_API_KEY
-- RAZORPAY_KEY_ID
-- RAZORPAY_KEY_SECRET
+SaleSmart AI deployment checklist
 
-For RLS, run supabase-rls-policies.sql in Supabase SQL Editor.
+1. Run supabase-rls-policies.sql in the Supabase SQL Editor before deploying
+   the matching API files. It creates the transactional credit, trial,
+   payment-idempotency, rate-limit, and admin-summary functions.
+
+2. Upload every non-metadata file in this folder to the root of the
+   GitHub/Vercel project, including all files in api/ and assets/.
+
+3. assets/config.js may contain only public browser configuration:
+   - Supabase project URL
+   - Supabase publishable/anon key
+   - Razorpay key ID
+
+4. Configure these secret Vercel environment variables:
+   - SUPABASE_URL
+   - SUPABASE_SERVICE_ROLE_KEY
+   - GEMINI_API_KEY
+   - GEMINI_MODEL (optional)
+   - RAZORPAY_KEY_ID
+   - RAZORPAY_KEY_SECRET
+
+5. Authorize the admin dashboard with at least one of:
+   - ADMIN_USER_IDS (comma-separated Supabase user UUIDs)
+   - ADMIN_EMAILS (comma-separated administrator emails)
+
+Do not use the retired ADMIN_PASSWORD setting. Never place Gemini keys,
+Razorpay secrets, or the Supabase service-role key in assets/config.js.

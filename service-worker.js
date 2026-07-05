@@ -1,4 +1,4 @@
-const CACHE_NAME = 'salesmart-ai-v20260604';
+const CACHE_NAME = 'salesmart-ai-v20260705b';
 const CORE_ASSETS = [
   '/',
   '/index.html',
@@ -8,10 +8,10 @@ const CORE_ASSETS = [
   '/tool-keywords.html',
   '/tool-reviews.html',
   '/offline.html',
-  '/assets/styles.css?v=20260601d',
-  '/assets/app.js?v=20260601d',
-  '/assets/config.js?v=20260601d',
-  '/assets/favicon.svg?v=20260601d',
+  '/assets/styles.css?v=20260705b',
+  '/assets/app.js?v=20260705b',
+  '/assets/config.js?v=20260705b',
+  '/assets/favicon.svg?v=20260705b',
   '/assets/icon-192.png',
   '/assets/icon-512.png'
 ];
@@ -33,12 +33,15 @@ self.addEventListener('fetch', event => {
   if (request.method !== 'GET') return;
   const url = new URL(request.url);
   if (url.origin !== location.origin) return;
+  if (url.pathname.startsWith('/api/')) return;
 
   event.respondWith(
     fetch(request)
       .then(response => {
-        const copy = response.clone();
-        caches.open(CACHE_NAME).then(cache => cache.put(request, copy));
+        if (response.ok && response.type === 'basic') {
+          const copy = response.clone();
+          event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.put(request, copy)));
+        }
         return response;
       })
       .catch(async () => {

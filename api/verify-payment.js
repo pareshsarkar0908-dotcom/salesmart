@@ -1,80 +1,50 @@
 import crypto from 'node:crypto';
 
 const PLANS = {
-  starter: { amount: 29900, credits: 150, name: 'Starter Pack' },
-  growth:  { amount: 99900, credits: 600, name: 'Growth Pack' },
-  pro:     { amount: 249900, credits: 1800, name: 'Pro Pack' }
+  starter: { amount: 29900, credits: 150 },
+  growth: { amount: 99900, credits: 600 },
+  pro: { amount: 249900, credits: 1800 }
 };
 
 async function verifyToken(supabaseUrl, serviceKey, token) {
-  const res = await fetch(`${supabaseUrl}/auth/v1/user`, {
+  const response = await fetch(`${supabaseUrl}/auth/v1/user`, {
     headers: { apikey: serviceKey, Authorization: `Bearer ${token}` }
   });
-  if (!res.ok) return null;
-  const user = await res.json().catch(() => null);
-  return user?.email ? user : null;
+  if (!response.ok) return null;
+  const user = await response.json().catch(() => null);
+  return user?.id && user?.email ? user : null;
 }
 
-async function fetchRazorpayOrder(keyId, keySecret, orderId) {
+async function fetchRazorpayResource(keyId, keySecret, path) {
   const auth = Buffer.from(`${keyId}:${keySecret}`).toString('base64');
-  const res = await fetch(`https://api.razorpay.com/v1/orders/${orderId}`, {
+  const response = await fetch(`https://api.razorpay.com/v1/${path}`, {
     headers: { Authorization: `Basic ${auth}` }
   });
-  if (!res.ok) return null;
-  return res.json().catch(() => null);
+  if (!response.ok) return null;
+  return response.json().catch(() => null);
 }
 
-async function addCreditsAndRecordOrder(supabaseUrl, serviceKey, email, planKey, plan, razorpayPaymentId, razorpayOrderId) {
-  const headers = {
-    apikey: serviceKey,
-    Authorization: `Bearer ${serviceKey}`,
-    'Content-Type': 'application/json',
-    Prefer: 'return=representation'
-  };
-
-  const selectRes = await fetch(
-    `${supabaseUrl}/rest/v1/credits?email=eq.${encodeURIComponent(email)}&select=balance&limit=1`,
-    { headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` } }
-  );
-  const rows = await selectRes.json().catch(() => []);
-  const currentBalance = rows?.[0]?.balance ?? 0;
-  const newBalance = currentBalance + plan.credits;
-
-  await fetch(
-    `${supabaseUrl}/rest/v1/credits?email=eq.${encodeURIComponent(email)}`,
-    {
-      method: 'PATCH',
-      headers,
-      body: JSON.stringify({ balance: newBalance, updated_at: new Date().toISOString() })
-    }
-  );
-
-  if (!rows?.length) {
-    await fetch(`${supabaseUrl}/rest/v1/credits`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({ email, balance: plan.credits, updated_at: new Date().toISOString() })
-    });
-  }
-
-  await fetch(`${supabaseUrl}/rest/v1/orders`, {
+async function finalizePayment(supabaseUrl, serviceKey, payload) {
+  const response = await fetch(`${supabaseUrl}/rest/v1/rpc/finalize_payment_atomic`, {
     method: 'POST',
-    headers: { ...headers, Prefer: 'return=minimal' },
-    body: JSON.stringify({
-      email,
-      plan: planKey,
-      amount: Math.round(plan.amount / 100),
-      credits: plan.credits,
-      status: 'paid',
-      razorpay_payment_id: razorpayPaymentId,
-      razorpay_order_id: razorpayOrderId
-    })
+    headers: {
+      apikey: serviceKey,
+      Authorization: `Bearer ${serviceKey}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(payload)
   });
-
-  return newBalance;
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}));
+    console.error('Payment finalization RPC failed', response.status, data?.message || '');
+    throw new Error('Payment finalization failed');
+  }
+  const rows = await response.json().catch(() => []);
+  return rows?.[0] || null;
 }
 
 export default async function handler(req, res) {
+  if (req.method === 'OPTIONS') return res.status(204).end();
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
@@ -83,7 +53,6 @@ export default async function handler(req, res) {
   const keyId = process.env.RAZORPAY_KEY_ID;
   const supabaseUrl = process.env.SUPABASE_URL;
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
   if (!secret || !keyId || !supabaseUrl || !serviceKey) {
     return res.status(500).json({ error: 'Server configuration error' });
   }
@@ -95,10 +64,9 @@ export default async function handler(req, res) {
   const user = await verifyToken(supabaseUrl, serviceKey, token);
   if (!user) return res.status(401).json({ error: 'Invalid or expired session' });
 
-  const orderId   = String(req.body?.razorpay_order_id  || '');
-  const paymentId = String(req.body?.razorpay_payment_id || '');
-  const signature = String(req.body?.razorpay_signature  || '');
-
+  const orderId = String(req.body?.razorpay_order_id || '').slice(0, 100);
+  const paymentId = String(req.body?.razorpay_payment_id || '').slice(0, 100);
+  const signature = String(req.body?.razorpay_signature || '').slice(0, 200);
   if (!orderId || !paymentId || !signature) {
     return res.status(400).json({ error: 'Payment verification fields are missing' });
   }
@@ -107,34 +75,59 @@ export default async function handler(req, res) {
     .createHmac('sha256', secret)
     .update(`${orderId}|${paymentId}`)
     .digest('hex');
-
   const verified =
     Buffer.byteLength(expected) === Buffer.byteLength(signature) &&
     crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(signature));
-
   if (!verified) {
     return res.status(400).json({ error: 'Payment signature is invalid', verified: false });
   }
 
-  const razorpayOrder = await fetchRazorpayOrder(keyId, secret, orderId);
-  if (!razorpayOrder) {
-    return res.status(502).json({ error: 'Could not fetch order details from Razorpay' });
-  }
-
-  const planKey = String(razorpayOrder.notes?.plan || '');
-  const plan = PLANS[planKey];
-  if (!plan) {
-    return res.status(400).json({ error: 'Unknown plan in order' });
-  }
-
   try {
-    const newBalance = await addCreditsAndRecordOrder(
-      supabaseUrl, serviceKey,
-      user.email, planKey, plan,
-      paymentId, orderId
-    );
-    return res.status(200).json({ ok: true, verified: true, balance: newBalance });
+    const [order, payment] = await Promise.all([
+      fetchRazorpayResource(keyId, secret, `orders/${encodeURIComponent(orderId)}`),
+      fetchRazorpayResource(keyId, secret, `payments/${encodeURIComponent(paymentId)}`)
+    ]);
+    if (!order || !payment) {
+      return res.status(502).json({ error: 'Could not confirm payment with Razorpay' });
+    }
+
+    const planKey = String(order.notes?.plan || '');
+    const plan = PLANS[planKey];
+    const ownerMatches =
+      String(order.notes?.user_id || '') === user.id &&
+      String(order.notes?.email || '').toLowerCase() === user.email.toLowerCase();
+    const paymentMatches =
+      payment.order_id === orderId &&
+      payment.status === 'captured' &&
+      payment.currency === 'INR' &&
+      Number(payment.amount) === plan?.amount &&
+      Number(order.amount) === plan?.amount &&
+      order.currency === 'INR';
+
+    if (!plan || !ownerMatches || !paymentMatches) {
+      return res.status(400).json({ error: 'Payment details do not match this account or plan' });
+    }
+
+    const result = await finalizePayment(supabaseUrl, serviceKey, {
+      p_user_id: user.id,
+      p_email: user.email,
+      p_plan: planKey,
+      p_amount: Math.round(plan.amount / 100),
+      p_credits: plan.credits,
+      p_payment_id: paymentId,
+      p_order_id: orderId
+    });
+    if (!result) throw new Error('Empty finalization result');
+
+    return res.status(200).json({
+      ok: true,
+      verified: true,
+      processed: Boolean(result.processed),
+      balance: Number(result.balance || 0),
+      message: result.processed ? 'Payment credited' : 'Payment was already credited'
+    });
   } catch (error) {
-    return res.status(500).json({ error: error.message || 'Could not finalize payment' });
+    console.error('verify-payment failed', error);
+    return res.status(500).json({ error: 'Could not finalize payment' });
   }
 }
