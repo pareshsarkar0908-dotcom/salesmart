@@ -813,10 +813,16 @@ function injectStructuredData() {
     {
       '@context': 'https://schema.org',
       '@type': 'Organization',
+      '@id': 'https://www.salesmart.in/#organization',
       name: 'SaleSmart AI',
+      alternateName: ['SaleSmart', 'Sale Smart AI'],
       url: 'https://www.salesmart.in/',
-      logo: 'https://www.salesmart.in/assets/icon-512.png',
-      sameAs: ['https://www.salesmart.in/']
+      logo: {
+        '@type': 'ImageObject',
+        url: 'https://www.salesmart.in/assets/icon-512.png',
+        width: 512,
+        height: 512
+      }
     }
   ];
 
@@ -831,6 +837,7 @@ function injectStructuredData() {
     inLanguage: 'en-IN',
     isPartOf: {
       '@type': 'WebSite',
+      '@id': 'https://www.salesmart.in/#website',
       name: 'SaleSmart AI',
       url: 'https://www.salesmart.in/'
     },
@@ -846,10 +853,12 @@ function injectStructuredData() {
     schemas.push({
       '@context': 'https://schema.org',
       '@type': 'WebSite',
+      '@id': 'https://www.salesmart.in/#website',
       name: 'SaleSmart AI',
       url: 'https://www.salesmart.in/',
       description,
-      inLanguage: 'en-IN'
+      inLanguage: 'en-IN',
+      publisher: { '@id': 'https://www.salesmart.in/#organization' }
     });
   }
 
@@ -862,7 +871,7 @@ function injectStructuredData() {
       operatingSystem: 'Web',
       url: canonical,
       description: toolSchemas[path].description,
-      creator: { '@type': 'Organization', name: 'SaleSmart AI' },
+      creator: { '@id': 'https://www.salesmart.in/#organization' },
       offers: { '@type': 'Offer', price: '0', priceCurrency: 'INR' }
     });
   }

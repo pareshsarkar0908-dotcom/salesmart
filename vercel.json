@@ -1,6 +1,11 @@
 {
   "redirects": [
     {
+      "source": "/index.html",
+      "destination": "/",
+      "permanent": true
+    },
+    {
       "source": "/supabase-rls-policies.sql",
       "destination": "/404",
       "permanent": false
