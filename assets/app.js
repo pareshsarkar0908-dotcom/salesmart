@@ -753,15 +753,94 @@ function injectStructuredData() {
   const title = document.title || 'SaleSmart AI';
   const description = document.querySelector('meta[name="description"]')?.content || '';
   const isArticle = document.querySelector('meta[property="og:type"]')?.content === 'article';
+  const path = location.pathname.replace(/^\//, '') || 'index.html';
+  const pageName = document.querySelector('h1')?.textContent.trim() || title.replace(/\s+-\s+SaleSmart AI$/, '');
+  const toolSchemas = {
+    'tool-listing.html': {
+      name: 'SaleSmart AI Listing Generator',
+      description: 'Generate ecommerce product titles, bullet points, descriptions, backend keywords, and marketplace SEO notes.'
+    },
+    'tool-keywords.html': {
+      name: 'SaleSmart AI SEO Keywords',
+      description: 'Generate ecommerce keyword clusters, long-tail terms, and backend search ideas for Indian marketplaces.'
+    },
+    'tool-reviews.html': {
+      name: 'SaleSmart AI Review Analyzer',
+      description: 'Analyze customer reviews for sentiment, complaints, product gaps, and ecommerce listing improvements.'
+    },
+    'tool-research.html': {
+      name: 'SaleSmart AI Product Research',
+      description: 'Structure ecommerce product research, positioning, pricing assumptions, risks, and validation steps.'
+    },
+    'tool-score.html': {
+      name: 'SaleSmart AI Listing Score',
+      description: 'Score ecommerce titles, bullets, descriptions, keyword coverage, and listing quality with practical fixes.'
+    },
+    'tool-multilingual.html': {
+      name: 'SaleSmart AI Multilingual Content',
+      description: 'Create localized ecommerce titles, bullet points, and descriptions for Indian languages and Hinglish.'
+    },
+    'tool-roi.html': {
+      name: 'SaleSmart AI ROI Planner',
+      description: 'Estimate ecommerce contribution margin, break-even units, ad-spend sensitivity, and monthly ROI scenarios.'
+    },
+    'amazon-listing-generator.html': {
+      name: 'SaleSmart AI Amazon Listing Generator',
+      description: 'Generate Amazon India product titles, bullet points, descriptions, backend keywords, and listing improvement ideas.'
+    },
+    'flipkart-listing-generator.html': {
+      name: 'SaleSmart AI Flipkart Listing Generator',
+      description: 'Generate Flipkart product titles, highlights, descriptions, search keywords, and listing optimization ideas.'
+    },
+    'meesho-listing-generator.html': {
+      name: 'SaleSmart AI Meesho Listing Generator',
+      description: 'Generate simple Meesho product titles, descriptions, keywords, and selling points for suppliers and resellers.'
+    },
+    'ai-product-description-generator.html': {
+      name: 'SaleSmart AI Product Description Generator',
+      description: 'Write product descriptions for Amazon, Flipkart, Meesho, Shopify, and ecommerce stores.'
+    },
+    'ecommerce-keyword-generator.html': {
+      name: 'SaleSmart AI Ecommerce Keyword Generator',
+      description: 'Generate ecommerce keyword clusters for Amazon, Flipkart, Meesho, Shopify, and marketplace SEO campaigns.'
+    },
+    'review-analysis-for-ecommerce.html': {
+      name: 'SaleSmart AI Ecommerce Review Analysis',
+      description: 'Analyze product reviews to find buyer pain points, objections, benefits, and listing improvement ideas.'
+    }
+  };
   const schemas = [
     {
       '@context': 'https://schema.org',
       '@type': 'Organization',
       name: 'SaleSmart AI',
       url: 'https://www.salesmart.in/',
-      logo: 'https://www.salesmart.in/assets/icon-512.png'
+      logo: 'https://www.salesmart.in/assets/icon-512.png',
+      sameAs: ['https://www.salesmart.in/']
     }
   ];
+
+  schemas.push({
+    '@context': 'https://schema.org',
+    '@type': 'WebPage',
+    name: pageName,
+    headline: pageName,
+    description,
+    url: canonical,
+    mainEntityOfPage: canonical,
+    inLanguage: 'en-IN',
+    isPartOf: {
+      '@type': 'WebSite',
+      name: 'SaleSmart AI',
+      url: 'https://www.salesmart.in/'
+    },
+    primaryImageOfPage: {
+      '@type': 'ImageObject',
+      url: 'https://www.salesmart.in/assets/icon-512.png',
+      width: 512,
+      height: 512
+    }
+  });
 
   if (location.pathname === '/' || location.pathname.endsWith('/index.html')) {
     schemas.push({
@@ -769,7 +848,39 @@ function injectStructuredData() {
       '@type': 'WebSite',
       name: 'SaleSmart AI',
       url: 'https://www.salesmart.in/',
-      description
+      description,
+      inLanguage: 'en-IN'
+    });
+  }
+
+  if (toolSchemas[path]) {
+    schemas.push({
+      '@context': 'https://schema.org',
+      '@type': 'SoftwareApplication',
+      name: toolSchemas[path].name,
+      applicationCategory: 'BusinessApplication',
+      operatingSystem: 'Web',
+      url: canonical,
+      description: toolSchemas[path].description,
+      creator: { '@type': 'Organization', name: 'SaleSmart AI' },
+      offers: { '@type': 'Offer', price: '0', priceCurrency: 'INR' }
+    });
+  }
+
+  const gridLinks = [...document.querySelectorAll('.seo-link-grid a')]
+    .map((link, index) => ({
+      '@type': 'ListItem',
+      position: index + 1,
+      name: link.querySelector('strong')?.textContent.trim() || link.textContent.trim(),
+      url: new URL(link.getAttribute('href'), location.href).href
+    }))
+    .filter(item => item.name && item.url);
+  if (gridLinks.length >= 3) {
+    schemas.push({
+      '@context': 'https://schema.org',
+      '@type': 'ItemList',
+      name: pageName + ' internal resources',
+      itemListElement: gridLinks
     });
   }
 

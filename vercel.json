@@ -1,4 +1,16 @@
 {
+  "redirects": [
+    {
+      "source": "/supabase-rls-policies.sql",
+      "destination": "/404",
+      "permanent": false
+    },
+    {
+      "source": "/partials-note.txt",
+      "destination": "/404",
+      "permanent": false
+    }
+  ],
   "headers": [
     {
       "source": "/(.*)",

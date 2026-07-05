@@ -2,3 +2,6 @@ User-agent: *
 Allow: /
 
 Sitemap: https://www.salesmart.in/sitemap.xml
+
+# AI discovery summary:
+# https://www.salesmart.in/llms.txt

@@ -1,4 +1,4 @@
-supabase-rls-policies.sql
+supabase-rls-policies*.sql
 partials-note.txt
 ._*
 **/._*
