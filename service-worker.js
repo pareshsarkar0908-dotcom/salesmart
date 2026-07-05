@@ -1,4 +1,4 @@
-const CACHE_NAME = 'salesmart-ai-v20260705b';
+const CACHE_NAME = 'salesmart-ai-v20260705c';
 const CORE_ASSETS = [
   '/',
   '/index.html',
@@ -8,10 +8,10 @@ const CORE_ASSETS = [
   '/tool-keywords.html',
   '/tool-reviews.html',
   '/offline.html',
-  '/assets/styles.css?v=20260705b',
-  '/assets/app.js?v=20260705b',
-  '/assets/config.js?v=20260705b',
-  '/assets/favicon.svg?v=20260705b',
+  '/assets/styles.css?v=20260705c',
+  '/assets/app.js?v=20260705c',
+  '/assets/config.js?v=20260705c',
+  '/assets/favicon.svg?v=20260705c',
   '/assets/icon-192.png',
   '/assets/icon-512.png'
 ];
