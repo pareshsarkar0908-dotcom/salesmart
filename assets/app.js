@@ -49,6 +49,20 @@ async function getSessionToken() {
   return data?.session?.access_token || '';
 }
 
+function friendlyAuthError(error, fallback) {
+  const message = String(error?.message || error || '').toLowerCase();
+  if (
+    message.includes('failed to fetch') ||
+    message.includes('networkerror') ||
+    message.includes('network request failed') ||
+    message.includes('load failed') ||
+    error?.name === 'AuthRetryableFetchError'
+  ) {
+    return 'Cannot reach the login server. This is usually an ad-blocker, privacy extension (uBlock, Brave Shields, AdGuard), VPN, or network firewall blocking the connection. Turn it off for this site or try a private/incognito window, then retry.';
+  }
+  return error?.message || fallback || 'Something went wrong. Please try again.';
+}
+
 function show(id, msg, type = '') {
   const el = document.getElementById(id);
   if (!el) return;
@@ -200,7 +214,7 @@ async function signup() {
     }
     setTimeout(() => { location.href = 'account.html'; }, 1200);
   } catch (error) {
-    show('signupNote', error.message || 'Could not create account. Please try again.', 'bad');
+    show('signupNote', friendlyAuthError(error, 'Could not create account. Please try again.'), 'bad');
   }
 }
 
@@ -220,7 +234,7 @@ async function login() {
     updateChrome();
     show('loginNote', trialResult?.granted ? 'Logged in. 10 free trial credits added.' : 'Logged in. Your account dashboard is ready.', 'good');
   } catch (error) {
-    show('loginNote', error.message || 'Login failed. Please try again.', 'bad');
+    show('loginNote', friendlyAuthError(error, 'Login failed. Please try again.'), 'bad');
   }
 }
 
@@ -236,7 +250,7 @@ async function sendPasswordReset() {
     if (error) return show('loginNote', error.message, 'bad');
     show('loginNote', 'Password reset email sent. Open the email link to create a new password.', 'good');
   } catch (error) {
-    show('loginNote', error.message || 'Could not send reset email. Please try again.', 'bad');
+    show('loginNote', friendlyAuthError(error, 'Could not send reset email. Please try again.'), 'bad');
   }
 }
 
@@ -254,7 +268,7 @@ async function updatePassword() {
     show('resetNote', 'Password updated. Please log in with your new password.', 'good');
     setTimeout(() => { location.href = 'account.html'; }, 1400);
   } catch (error) {
-    show('resetNote', error.message || 'Could not update password. Please try again.', 'bad');
+    show('resetNote', friendlyAuthError(error, 'Could not update password. Please try again.'), 'bad');
   }
 }
 
