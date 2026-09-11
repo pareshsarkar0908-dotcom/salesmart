@@ -1014,6 +1014,48 @@ function registerServiceWorker() {
   navigator.serviceWorker.register('/service-worker.js').catch(() => null);
 }
 
+function enhanceSeoMeta() {
+  const robotsEl = document.head.querySelector('meta[name="robots"]');
+  const robots = (robotsEl?.content || '').toLowerCase();
+  if (robots.includes('noindex')) return; // respect noindex pages (admin, account, etc.)
+
+  const previews = 'max-image-preview:large, max-snippet:-1, max-video-preview:-1';
+  if (!robotsEl) {
+    const m = document.createElement('meta');
+    m.name = 'robots';
+    m.content = `index, follow, ${previews}`;
+    document.head.appendChild(m);
+  } else if (!robots.includes('max-image-preview')) {
+    robotsEl.content = `${robotsEl.content}, ${previews}`;
+  }
+
+  const addProp = (prop, content) => {
+    if (content && !document.head.querySelector(`meta[property="${prop}"]`)) {
+      const m = document.createElement('meta');
+      m.setAttribute('property', prop);
+      m.content = content;
+      document.head.appendChild(m);
+    }
+  };
+  const addName = (name, content) => {
+    if (content && !document.head.querySelector(`meta[name="${name}"]`)) {
+      const m = document.createElement('meta');
+      m.name = name;
+      m.content = content;
+      document.head.appendChild(m);
+    }
+  };
+
+  addProp('og:site_name', 'SaleSmart AI');
+  addProp('og:locale', 'en_IN');
+  const ogTitle = document.head.querySelector('meta[property="og:title"]')?.content || document.title;
+  const ogDesc = document.head.querySelector('meta[property="og:description"]')?.content
+    || document.querySelector('meta[name="description"]')?.content || '';
+  addName('twitter:title', ogTitle);
+  addName('twitter:description', ogDesc);
+  addName('author', 'SaleSmart AI');
+}
+
 function injectStructuredData() {
   const robots = document.querySelector('meta[name="robots"]')?.content || '';
   if (robots.toLowerCase().includes('noindex')) return;
@@ -1188,7 +1230,9 @@ function injectStructuredData() {
     }
   }
 
-  if (isArticle) {
+  const hasInlineArticle = [...document.querySelectorAll('script[type="application/ld+json"]')]
+    .some(node => /"@type"\s*:\s*"(Article|BlogPosting|NewsArticle)"/.test(node.textContent || ''));
+  if (isArticle && !hasInlineArticle) {
     schemas.push({
       '@context': 'https://schema.org',
       '@type': 'Article',
@@ -1211,6 +1255,7 @@ function injectStructuredData() {
 async function init() {
   initAccessibility();
   bindActions();
+  enhanceSeoMeta();
   injectStructuredData();
   initAnalyticsConsent();
   registerServiceWorker();
