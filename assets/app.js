@@ -381,7 +381,9 @@ function loadAdsense() {
   document.head.appendChild(script);
 }
 
-const MAX_ADS_PER_PAGE = 3;
+// Max ad units per page. Higher = more risk of AdSense "ad density" policy
+// strikes and lower conversion. 3-4 is the safe, high-earning sweet spot.
+const MAX_ADS_PER_PAGE = 6;
 
 function createAdHolder(client, slot) {
   const holder = document.createElement('div');
@@ -411,7 +413,7 @@ function renderAdSlots() {
   const toolLayout = wrap.querySelector('.tool-layout');
   if (toolLayout) inserts.push(toolLayout);
   const sections = Array.from(wrap.querySelectorAll('.seo-section'));
-  [sections[0], sections[2], sections[4]].forEach(sec => {
+  sections.forEach(sec => {
     if (sec && sec.nextSibling) inserts.push(sec.nextSibling);
   });
 
