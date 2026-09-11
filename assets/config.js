@@ -6,4 +6,4 @@ window.SALESMART_RAZORPAY_KEY_ID = 'rzp_live_SvxaS8NNrTTmVP';
 window.SALESMART_ADSENSE_CLIENT = 'ca-pub-6773463503574359';
 // Display ad-unit slot ID (numeric) from AdSense > Ads > By ad unit > Display ads.
 // When set, a responsive banner is placed on tool pages. Empty = rely on Auto ads only.
-window.SALESMART_ADSENSE_SLOT = '';
+window.SALESMART_ADSENSE_SLOT = '5864596926';
