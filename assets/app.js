@@ -564,6 +564,25 @@ function initToolCreditPanel() {
   updateToolCreditPanel();
 }
 
+function readImageInput(input) {
+  return new Promise(resolve => {
+    const file = input?.files?.[0];
+    if (!file) return resolve(null);
+    const allowed = ['image/jpeg', 'image/png', 'image/webp'];
+    if (!allowed.includes(file.type)) return resolve({ error: 'Use a JPG, PNG, or WebP image.' });
+    if (file.size > 5 * 1024 * 1024) return resolve({ error: 'Image must be under 5 MB.' });
+    const reader = new FileReader();
+    reader.onerror = () => resolve({ error: 'Could not read the image file.' });
+    reader.onload = () => {
+      const result = String(reader.result || '');
+      const data = result.includes(',') ? result.split(',')[1] : '';
+      if (!data) return resolve({ error: 'Could not read the image file.' });
+      resolve({ mimeType: file.type, data });
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
 async function generateAI() {
   if (generationInFlight) return;
   const email = getEmail();
@@ -585,6 +604,11 @@ async function generateAI() {
 
   if (!product) return show('toolNote', 'Enter a product or topic.', 'bad');
 
+  let image = null;
+  const imageResult = await readImageInput(document.getElementById('productImage'));
+  if (imageResult?.error) return show('toolNote', imageResult.error, 'bad');
+  if (imageResult?.data) image = imageResult;
+
   generationInFlight = true;
   show('toolNote', 'Generating with SaleSmart AI...');
   output.textContent = 'Generating...';
@@ -592,7 +616,7 @@ async function generateAI() {
     const res  = await fetch('/api/gemini', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ tool, product, details })
+      body: JSON.stringify(image ? { tool, product, details, image } : { tool, product, details })
     });
     const data = await res.json().catch(() => ({}));
     if (typeof data.balance === 'number') setCredits(data.balance);
