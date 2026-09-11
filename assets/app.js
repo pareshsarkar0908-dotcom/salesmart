@@ -474,24 +474,8 @@ async function initPaidFeatures() {
     renderAdSlots();
   }
 
-  const input = document.getElementById('productImage');
   const onTool = !!document.body.dataset.tool;
-  if (!input && !onTool) return;
-
-  // Lock the product-photo input for non-paid users.
-  if (input && !paid) {
-    input.disabled = true;
-    input.value = '';
-    const hint = input.parentElement?.querySelector('p.faint');
-    if (hint) {
-      hint.textContent = '';
-      hint.append('Image-to-listing is a paid feature. ');
-      const link = document.createElement('a');
-      link.href = 'pricing.html';
-      link.textContent = 'Buy a credit pack to unlock it.';
-      hint.appendChild(link);
-    }
-  }
+  if (!onTool) return;
 
   // Show an upgrade prompt to logged-in free/trial users on tool pages.
   let dismissed = false;

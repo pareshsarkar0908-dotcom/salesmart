@@ -8,7 +8,7 @@ const CORE_ASSETS = [
   '/tool-keywords.html',
   '/tool-reviews.html',
   '/offline.html',
-  '/assets/styles.css?v=20260910a',
+  '/assets/styles.css?v=20260911a',
   '/assets/app.js?v=20260911b',
   '/assets/config.js?v=20260910a',
   '/assets/favicon.svg?v=20260705c',
