@@ -422,6 +422,18 @@ async function claimTrial() {
   );
 }
 
+function focusCheckoutForm() {
+  const checkoutPlan = document.getElementById('checkoutPlan');
+  const card = checkoutPlan?.closest('.card');
+  if (!card) { startPayment(); return; }
+  card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  const firstEmpty = ['checkoutName', 'checkoutEmail', 'checkoutPhone', 'checkoutPassword']
+    .map(id => document.getElementById(id))
+    .find(el => el && !el.readOnly && el.offsetParent !== null && !el.value.trim());
+  if (firstEmpty) setTimeout(() => { try { firstEmpty.focus({ preventScroll: true }); } catch { firstEmpty.focus(); } }, 350);
+  show('checkoutNote', 'Enter your details below, then click Continue to pay.');
+}
+
 async function startPayment() {
   if (paymentInFlight) return;
   const planKey      = document.getElementById('checkoutPlan')?.value || 'growth';
@@ -725,10 +737,16 @@ function bindActions() {
     }
     if (action === 'start-payment') {
       const plan = trigger.dataset.plan;
-      if (plan && document.getElementById('checkoutPlan')) {
-        document.getElementById('checkoutPlan').value = plan;
+      const checkoutPlan = document.getElementById('checkoutPlan');
+      if (plan && checkoutPlan) checkoutPlan.value = plan;
+      // Plan-card buttons carry data-plan: select the plan and send the buyer
+      // to the checkout form to fill their details. The form's own Continue
+      // button (no data-plan) is what actually starts payment.
+      if (plan && checkoutPlan) {
+        focusCheckoutForm();
+      } else {
+        startPayment();
       }
-      startPayment();
     }
   });
 
