@@ -2,7 +2,8 @@ const CONFIG = {
   supabaseUrl: window.SALESMART_SUPABASE_URL || '',
   supabaseAnonKey: window.SALESMART_SUPABASE_ANON_KEY || '',
   razorpayKeyId: window.SALESMART_RAZORPAY_KEY_ID || '',
-  adsenseClient: window.SALESMART_ADSENSE_CLIENT || ''
+  adsenseClient: window.SALESMART_ADSENSE_CLIENT || '',
+  adsenseSlot: window.SALESMART_ADSENSE_SLOT || ''
 };
 
 const CREDIT_KEY = 'salesmart_credit_balance';
@@ -380,6 +381,31 @@ function loadAdsense() {
   document.head.appendChild(script);
 }
 
+function renderAdSlot() {
+  const client = CONFIG.adsenseClient;
+  const slot = CONFIG.adsenseSlot;
+  if (!client || !client.startsWith('ca-pub-') || !slot) return;
+  if (document.querySelector('meta[name="robots"]')?.content?.toLowerCase().includes('noindex')) return;
+  if (document.getElementById('adSlotBanner')) return;
+  // Place a responsive banner between the page heading and the tool.
+  const wrap = document.querySelector('main .wrap');
+  const anchor = wrap?.querySelector('.tool-layout');
+  if (!wrap || !anchor) return;
+  const holder = document.createElement('div');
+  holder.id = 'adSlotBanner';
+  holder.className = 'ad-slot';
+  const ins = document.createElement('ins');
+  ins.className = 'adsbygoogle';
+  ins.style.display = 'block';
+  ins.setAttribute('data-ad-client', client);
+  ins.setAttribute('data-ad-slot', slot);
+  ins.setAttribute('data-ad-format', 'auto');
+  ins.setAttribute('data-full-width-responsive', 'true');
+  holder.appendChild(ins);
+  wrap.insertBefore(holder, anchor);
+  try { (window.adsbygoogle = window.adsbygoogle || []).push({}); } catch {}
+}
+
 const UPGRADE_DISMISS_KEY = 'salesmart_upgrade_dismissed';
 
 function buildUpgradeBanner() {
@@ -422,7 +448,10 @@ async function initPaidFeatures() {
   const paid = await isPaidUser();
 
   // Show ads to everyone except paying customers (logged-out + free/trial).
-  if (!paid) loadAdsense();
+  if (!paid) {
+    loadAdsense();
+    renderAdSlot();
+  }
 
   const input = document.getElementById('productImage');
   const onTool = !!document.body.dataset.tool;

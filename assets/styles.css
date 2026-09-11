@@ -125,6 +125,7 @@ h3 { font-size: 24px; }
 .upgrade-banner .eyebrow { margin-bottom: 6px; }
 .upgrade-banner strong { display: block; font-size: 18px; letter-spacing: -.01em; }
 .upgrade-banner .faint { margin-top: 4px; }
+.ad-slot { margin: 20px 0; min-height: 90px; overflow: hidden; }
 .muted { color: var(--muted); line-height: 1.7; }
 .faint { color: var(--faint); }
 .stat { padding-top: 18px; margin-top: 18px; border-top: 1px solid var(--line); display: flex; justify-content: space-between; gap: 12px; align-items: end; }
