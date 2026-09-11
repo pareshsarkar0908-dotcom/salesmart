@@ -381,18 +381,10 @@ function loadAdsense() {
   document.head.appendChild(script);
 }
 
-function renderAdSlot() {
-  const client = CONFIG.adsenseClient;
-  const slot = CONFIG.adsenseSlot;
-  if (!client || !client.startsWith('ca-pub-') || !slot) return;
-  if (document.querySelector('meta[name="robots"]')?.content?.toLowerCase().includes('noindex')) return;
-  if (document.getElementById('adSlotBanner')) return;
-  // Place a responsive banner between the page heading and the tool.
-  const wrap = document.querySelector('main .wrap');
-  const anchor = wrap?.querySelector('.tool-layout');
-  if (!wrap || !anchor) return;
+const MAX_ADS_PER_PAGE = 3;
+
+function createAdHolder(client, slot) {
   const holder = document.createElement('div');
-  holder.id = 'adSlotBanner';
   holder.className = 'ad-slot';
   const ins = document.createElement('ins');
   ins.className = 'adsbygoogle';
@@ -402,8 +394,35 @@ function renderAdSlot() {
   ins.setAttribute('data-ad-format', 'auto');
   ins.setAttribute('data-full-width-responsive', 'true');
   holder.appendChild(ins);
-  wrap.insertBefore(holder, anchor);
-  try { (window.adsbygoogle = window.adsbygoogle || []).push({}); } catch {}
+  return holder;
+}
+
+function renderAdSlots() {
+  const client = CONFIG.adsenseClient;
+  const slot = CONFIG.adsenseSlot;
+  if (!client || !client.startsWith('ca-pub-') || !slot) return;
+  if (document.querySelector('meta[name="robots"]')?.content?.toLowerCase().includes('noindex')) return;
+  const wrap = document.querySelector('main .wrap');
+  if (!wrap || wrap.querySelector('.ad-slot')) return;
+
+  // Build a list of insertion points: above the tool, and between content
+  // sections on the homepage, blog, and guide pages.
+  const inserts = [];
+  const toolLayout = wrap.querySelector('.tool-layout');
+  if (toolLayout) inserts.push(toolLayout);
+  const sections = Array.from(wrap.querySelectorAll('.seo-section'));
+  [sections[0], sections[2], sections[4]].forEach(sec => {
+    if (sec && sec.nextSibling) inserts.push(sec.nextSibling);
+  });
+
+  let placed = 0;
+  for (const anchor of inserts) {
+    if (placed >= MAX_ADS_PER_PAGE) break;
+    if (!anchor || !anchor.parentNode) continue;
+    anchor.parentNode.insertBefore(createAdHolder(client, slot), anchor);
+    try { (window.adsbygoogle = window.adsbygoogle || []).push({}); } catch {}
+    placed += 1;
+  }
 }
 
 const UPGRADE_DISMISS_KEY = 'salesmart_upgrade_dismissed';
@@ -450,7 +469,7 @@ async function initPaidFeatures() {
   // Show ads to everyone except paying customers (logged-out + free/trial).
   if (!paid) {
     loadAdsense();
-    renderAdSlot();
+    renderAdSlots();
   }
 
   const input = document.getElementById('productImage');
