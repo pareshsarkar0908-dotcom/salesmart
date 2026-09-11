@@ -1,9 +1,9 @@
 import crypto from 'node:crypto';
 
 const PLANS = {
-  starter: { amount: 299, credits: 150 },
-  growth: { amount: 999, credits: 600 },
-  pro: { amount: 2499, credits: 1800 }
+  starter: { amount: 159, credits: 150 },
+  growth: { amount: 649, credits: 600 },
+  pro: { amount: 1899, credits: 1800 }
 };
 
 async function verifyToken(supabaseUrl, serviceKey, token) {

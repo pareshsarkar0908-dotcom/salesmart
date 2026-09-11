@@ -16,9 +16,9 @@ let paymentInFlight = false;
 
 const PLANS = {
   trial:   { name: 'Free Trial',    amount: 0,    credits: 10,   label: 'INR 0' },
-  starter: { name: 'Starter Pack',  amount: 299,  credits: 150,  label: 'INR 299' },
-  growth:  { name: 'Growth Pack',   amount: 999,  credits: 600,  label: 'INR 999' },
-  pro:     { name: 'Pro Pack',      amount: 2499, credits: 1800, label: 'INR 2499' }
+  starter: { name: 'Starter Pack',  amount: 159,  credits: 150,  label: 'INR 159' },
+  growth:  { name: 'Growth Pack',   amount: 649,  credits: 600,  label: 'INR 649' },
+  pro:     { name: 'Pro Pack',      amount: 1899, credits: 1800, label: 'INR 1899' }
 };
 
 function hasRealValue(value, blocked = []) {
@@ -442,7 +442,7 @@ function buildUpgradeBanner() {
   heading.textContent = 'Unlock more with a paid plan.';
   const sub = document.createElement('p');
   sub.className = 'faint';
-  sub.textContent = 'Add product photos to generate richer listings and get up to 1,800 credits. From INR 299.';
+  sub.textContent = 'Get up to 1,800 credits and unlock every tool for your whole catalogue. From INR 159.';
   text.append(eyebrow, heading, sub);
 
   const actions = document.createElement('div');

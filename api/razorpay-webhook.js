@@ -7,9 +7,9 @@ export const config = {
 };
 
 const PLANS = {
-  starter: { amount: 29900, credits: 150 },
-  growth: { amount: 99900, credits: 600 },
-  pro: { amount: 249900, credits: 1800 }
+  starter: { amount: 15900, credits: 150 },
+  growth: { amount: 64900, credits: 600 },
+  pro: { amount: 189900, credits: 1800 }
 };
 
 async function readRawBody(req) {
