@@ -207,6 +207,7 @@ async function signup() {
       setEmail(email);
       setName(name);
       await grantAutomaticTrial();
+      await claimReferral();
       updateChrome();
       show('signupNote', 'Account created. Your free trial is ready.', 'good');
     } else {
@@ -232,6 +233,7 @@ async function login() {
     setEmail(email);
     setName(data?.user?.user_metadata?.full_name || getName());
     await loadCredits();
+    await claimReferral();
     const trialResult = await grantAutomaticTrial();
     updateChrome();
     show('loginNote', trialResult?.granted ? 'Logged in. 10 free trial credits added.' : 'Logged in. Your account dashboard is ready.', 'good');
@@ -950,6 +952,7 @@ function bindActions() {
     if (action === 'generate-ai') generateAI();
     if (action === 'copy-output') copyOutput();
     if (action === 'download-csv') downloadOutputCsv();
+    if (action === 'copy-referral') copyReferral();
     if (action === 'accept-analytics') dismissConsent('granted');
     if (action === 'decline-analytics') dismissConsent('denied');
     if (action === 'reset-analytics') {
@@ -1273,7 +1276,61 @@ function injectBlogLinks() {
   main.appendChild(section);
 }
 
+const REF_KEY = 'salesmart_ref';
+
+function captureReferral() {
+  const ref = new URLSearchParams(location.search).get('ref');
+  if (ref) { try { localStorage.setItem(REF_KEY, ref.trim().slice(0, 32)); } catch {} }
+}
+
+async function claimReferral() {
+  let ref = '';
+  try { ref = localStorage.getItem(REF_KEY) || ''; } catch {}
+  if (!ref) return;
+  const token = await getSessionToken();
+  if (!token) return;
+  try {
+    const res = await fetch('/api/referral', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ action: 'claim', code: ref })
+    });
+    const data = await res.json().catch(() => ({}));
+    if (data.success && typeof data.balance === 'number') setCredits(data.balance);
+    try { localStorage.removeItem(REF_KEY); } catch {}
+  } catch {}
+}
+
+async function initReferral() {
+  const linkInput = document.getElementById('referralLink');
+  if (!linkInput || !getEmail()) return;
+  const token = await getSessionToken();
+  if (!token) return;
+  try {
+    const res = await fetch('/api/referral', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ action: 'code' })
+    });
+    const data = await res.json().catch(() => ({}));
+    if (data.code) linkInput.value = `${location.origin}/signup.html?ref=${data.code}`;
+  } catch {}
+}
+
+async function copyReferral() {
+  const linkInput = document.getElementById('referralLink');
+  if (!linkInput || !linkInput.value) return;
+  try {
+    await navigator.clipboard.writeText(linkInput.value);
+    show('referralNote', 'Referral link copied. Share it to earn credits.', 'good');
+  } catch {
+    linkInput.select();
+    show('referralNote', 'Select the link above and copy it.', 'bad');
+  }
+}
+
 async function init() {
+  captureReferral();
   initAccessibility();
   bindActions();
   enhanceSeoMeta();
@@ -1290,6 +1347,7 @@ async function init() {
   loadCredits();
   loadOrders();
   initPaidFeatures();
+  initReferral();
 }
 document.addEventListener('DOMContentLoaded', init);
 

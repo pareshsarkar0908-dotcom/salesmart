@@ -64,6 +64,22 @@ async function finalizePayment(supabaseUrl, serviceKey, payload) {
   return rows?.[0] || null;
 }
 
+async function rewardReferrer(supabaseUrl, serviceKey, userId) {
+  try {
+    await fetch(`${supabaseUrl}/rest/v1/rpc/reward_referrer_on_purchase`, {
+      method: 'POST',
+      headers: {
+        apikey: serviceKey,
+        Authorization: `Bearer ${serviceKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ p_referred_user_id: userId })
+    });
+  } catch (error) {
+    console.error('referral reward failed', error);
+  }
+}
+
 export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(204).end();
   if (req.method !== 'POST') {
@@ -138,6 +154,8 @@ export default async function handler(req, res) {
       p_order_id: orderId
     });
     if (!result) throw new Error('Empty finalization result');
+
+    if (result.processed) await rewardReferrer(supabaseUrl, serviceKey, userId);
 
     return res.status(200).json({
       ok: true,

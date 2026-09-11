@@ -487,3 +487,155 @@ grant execute on function grant_trial_atomic(uuid, text, integer) to service_rol
 grant execute on function finalize_payment_atomic(uuid, text, text, integer, integer, text, text) to service_role;
 grant execute on function check_rate_limit(text, text, integer, integer) to service_role;
 grant execute on function admin_dashboard_summary() to service_role;
+
+-- ---------------------------------------------------------------------------
+-- Referral program: friend gets +5 credits on signup via a referral link,
+-- referrer gets +20 credits when that friend makes their first paid purchase.
+-- ---------------------------------------------------------------------------
+
+create table if not exists referral_codes (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  code text unique not null,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists referrals (
+  referred_user_id uuid primary key references auth.users(id) on delete cascade,
+  referrer_user_id uuid not null references auth.users(id) on delete cascade,
+  welcome_granted boolean not null default false,
+  purchase_rewarded boolean not null default false,
+  created_at timestamptz not null default now(),
+  constraint referrals_no_self check (referred_user_id <> referrer_user_id)
+);
+
+create index if not exists referrals_referrer_idx on referrals(referrer_user_id);
+
+alter table referral_codes enable row level security;
+alter table referrals enable row level security;
+
+drop policy if exists "Users can read their own referral code" on referral_codes;
+create policy "Users can read their own referral code"
+on referral_codes for select
+using (user_id = auth.uid());
+
+drop policy if exists "Users can read their own referrals" on referrals;
+create policy "Users can read their own referrals"
+on referrals for select
+using (referrer_user_id = auth.uid() or referred_user_id = auth.uid());
+
+create or replace function get_or_create_referral_code(p_user_id uuid)
+returns text
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_code text;
+begin
+  select code into v_code from referral_codes where user_id = p_user_id;
+  if v_code is not null then
+    return v_code;
+  end if;
+  loop
+    v_code := substr(encode(gen_random_bytes(6), 'hex'), 1, 8);
+    begin
+      insert into referral_codes(user_id, code) values (p_user_id, v_code);
+      return v_code;
+    exception when unique_violation then
+      select code into v_code from referral_codes where user_id = p_user_id;
+      if v_code is not null then
+        return v_code;
+      end if;
+    end;
+  end loop;
+end;
+$$;
+
+create or replace function apply_referral_welcome(
+  p_referred_user_id uuid,
+  p_referred_email text,
+  p_code text,
+  p_welcome integer default 5
+)
+returns table(success boolean, balance integer, message text)
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_referrer uuid;
+  v_balance integer;
+begin
+  select user_id into v_referrer from referral_codes where code = lower(p_code);
+  if v_referrer is null then
+    return query select false, null::integer, 'Invalid referral code';
+    return;
+  end if;
+  if v_referrer = p_referred_user_id then
+    return query select false, null::integer, 'You cannot refer yourself';
+    return;
+  end if;
+
+  update credits
+  set user_id = p_referred_user_id, email = lower(p_referred_email), updated_at = now()
+  where user_id is null and lower(email) = lower(p_referred_email);
+
+  insert into referrals(referred_user_id, referrer_user_id, welcome_granted)
+  values (p_referred_user_id, v_referrer, true)
+  on conflict (referred_user_id) do nothing;
+
+  if not found then
+    return query select false, null::integer, 'This account was already referred';
+    return;
+  end if;
+
+  insert into credits(user_id, email, balance, updated_at)
+  values (p_referred_user_id, lower(p_referred_email), p_welcome, now())
+  on conflict (user_id) do update
+  set balance = credits.balance + excluded.balance,
+      email = excluded.email,
+      updated_at = now()
+  returning credits.balance into v_balance;
+
+  return query select true, v_balance, 'Welcome bonus added';
+end;
+$$;
+
+create or replace function reward_referrer_on_purchase(
+  p_referred_user_id uuid,
+  p_reward integer default 20
+)
+returns boolean
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_referrer uuid;
+begin
+  update referrals
+  set purchase_rewarded = true
+  where referred_user_id = p_referred_user_id and purchase_rewarded = false
+  returning referrer_user_id into v_referrer;
+
+  if v_referrer is null then
+    return false;
+  end if;
+
+  insert into credits(user_id, balance, updated_at)
+  values (v_referrer, p_reward, now())
+  on conflict (user_id) do update
+  set balance = credits.balance + excluded.balance,
+      updated_at = now();
+
+  return true;
+end;
+$$;
+
+revoke all on function get_or_create_referral_code(uuid) from public, anon, authenticated;
+revoke all on function apply_referral_welcome(uuid, text, text, integer) from public, anon, authenticated;
+revoke all on function reward_referrer_on_purchase(uuid, integer) from public, anon, authenticated;
+
+grant execute on function get_or_create_referral_code(uuid) to service_role;
+grant execute on function apply_referral_welcome(uuid, text, text, integer) to service_role;
+grant execute on function reward_referrer_on_purchase(uuid, integer) to service_role;
