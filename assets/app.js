@@ -383,7 +383,7 @@ function loadAdsense() {
 
 // Max ad units per page. Higher = more risk of AdSense "ad density" policy
 // strikes and lower conversion. 3-4 is the safe, high-earning sweet spot.
-const MAX_ADS_PER_PAGE = 6;
+const MAX_ADS_PER_PAGE = 3;
 
 function createAdHolder(client, slot) {
   const holder = document.createElement('div');
