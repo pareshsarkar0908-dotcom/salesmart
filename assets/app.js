@@ -570,7 +570,7 @@ function readImageInput(input) {
     if (!file) return resolve(null);
     const allowed = ['image/jpeg', 'image/png', 'image/webp'];
     if (!allowed.includes(file.type)) return resolve({ error: 'Use a JPG, PNG, or WebP image.' });
-    if (file.size > 5 * 1024 * 1024) return resolve({ error: 'Image must be under 5 MB.' });
+    if (file.size > 3 * 1024 * 1024) return resolve({ error: 'Image must be under 3 MB.' });
     const reader = new FileReader();
     reader.onerror = () => resolve({ error: 'Could not read the image file.' });
     reader.onload = () => {

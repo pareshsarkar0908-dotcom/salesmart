@@ -110,7 +110,9 @@ export default async function handler(req, res) {
 
   // Optional product image (base64) for vision-assisted listing generation.
   const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
-  const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+  // Keep the base64 body safely under Vercel's ~4.5 MB request-body limit
+  // (base64 inflates size by ~35%, so 3 MB of image ≈ 4 MB encoded).
+  const MAX_IMAGE_BYTES = 3 * 1024 * 1024;
   let image = null;
   const rawImage = req.body?.image;
   if (rawImage && typeof rawImage === 'object') {
@@ -122,7 +124,7 @@ export default async function handler(req, res) {
       }
       // base64 expands ~4/3; guard against oversized uploads before decoding.
       if (data.length > Math.ceil(MAX_IMAGE_BYTES / 3) * 4) {
-        return res.status(413).json({ error: 'Image is too large. Use an image under 5 MB.' });
+        return res.status(413).json({ error: 'Image is too large. Use an image under 3 MB.' });
       }
       image = { mimeType, data };
     }
