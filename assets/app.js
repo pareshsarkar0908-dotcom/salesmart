@@ -365,20 +365,72 @@ async function isPaidUser() {
   return !error && Array.isArray(data) && data.length > 0;
 }
 
-async function initImageGate() {
+const UPGRADE_DISMISS_KEY = 'salesmart_upgrade_dismissed';
+
+function buildUpgradeBanner() {
+  const banner = document.createElement('div');
+  banner.id = 'upgradeBanner';
+  banner.className = 'card upgrade-banner';
+
+  const text = document.createElement('div');
+  const eyebrow = document.createElement('div');
+  eyebrow.className = 'eyebrow';
+  eyebrow.textContent = 'Upgrade';
+  const heading = document.createElement('strong');
+  heading.textContent = 'Unlock more with a paid plan.';
+  const sub = document.createElement('p');
+  sub.className = 'faint';
+  sub.textContent = 'Add product photos to generate richer listings and get up to 1,800 credits. From INR 299.';
+  text.append(eyebrow, heading, sub);
+
+  const actions = document.createElement('div');
+  actions.className = 'inline-actions';
+  const buy = document.createElement('a');
+  buy.className = 'btn primary';
+  buy.href = 'pricing.html';
+  buy.textContent = 'See plans';
+  const dismiss = document.createElement('button');
+  dismiss.className = 'btn';
+  dismiss.type = 'button';
+  dismiss.textContent = 'Not now';
+  dismiss.addEventListener('click', () => {
+    banner.remove();
+    try { sessionStorage.setItem(UPGRADE_DISMISS_KEY, '1'); } catch {}
+  });
+  actions.append(buy, dismiss);
+
+  banner.append(text, actions);
+  return banner;
+}
+
+async function initPaidFeatures() {
   const input = document.getElementById('productImage');
-  if (!input) return;
-  const hint = input.parentElement?.querySelector('p.faint');
-  if (await isPaidUser()) return;
-  input.disabled = true;
-  input.value = '';
-  if (hint) {
-    hint.textContent = '';
-    hint.append('Image-to-listing is a paid feature. ');
-    const link = document.createElement('a');
-    link.href = 'pricing.html';
-    link.textContent = 'Buy a credit pack to unlock it.';
-    hint.appendChild(link);
+  const onTool = !!document.body.dataset.tool;
+  if (!input && !onTool) return;
+
+  const paid = await isPaidUser();
+
+  // Lock the product-photo input for non-paid users.
+  if (input && !paid) {
+    input.disabled = true;
+    input.value = '';
+    const hint = input.parentElement?.querySelector('p.faint');
+    if (hint) {
+      hint.textContent = '';
+      hint.append('Image-to-listing is a paid feature. ');
+      const link = document.createElement('a');
+      link.href = 'pricing.html';
+      link.textContent = 'Buy a credit pack to unlock it.';
+      hint.appendChild(link);
+    }
+  }
+
+  // Show an upgrade prompt to logged-in free/trial users on tool pages.
+  let dismissed = false;
+  try { dismissed = sessionStorage.getItem(UPGRADE_DISMISS_KEY) === '1'; } catch {}
+  if (onTool && getEmail() && !paid && !dismissed && !document.getElementById('upgradeBanner')) {
+    const wrap = document.querySelector('main .wrap');
+    if (wrap) wrap.insertBefore(buildUpgradeBanner(), wrap.firstChild);
   }
 }
 
@@ -649,6 +701,11 @@ async function generateAI() {
     if (typeof data.balance === 'number') setCredits(data.balance);
     if (!res.ok) {
       output.textContent = 'Generation did not complete.';
+      if (res.status === 402) {
+        show('toolNote', (data.error || 'You are out of credits.') + ' Redirecting to pricing...', 'bad');
+        setTimeout(() => { location.href = 'pricing.html'; }, 1600);
+        return;
+      }
       return show('toolNote', data.error || 'AI generation failed.', 'bad');
     }
     output.textContent = cleanAIText(data.text || 'No output returned.');
@@ -1036,7 +1093,7 @@ async function init() {
   initPasswordReset();
   loadCredits();
   loadOrders();
-  initImageGate();
+  initPaidFeatures();
 }
 document.addEventListener('DOMContentLoaded', init);
 
