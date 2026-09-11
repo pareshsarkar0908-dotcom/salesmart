@@ -1252,11 +1252,49 @@ function injectStructuredData() {
   document.head.appendChild(script);
 }
 
+const BLOG_LINKS = [
+  { href: 'blog-amazon-listing-mistakes.html', title: '7 Amazon Listing Mistakes Costing You Sales', blurb: 'Common India-seller listing errors and how to fix each one.' },
+  { href: 'blog-flipkart-listing-tips.html', title: '9 Flipkart Listing Tips to Rank Higher', blurb: 'Get found in Flipkart search and win the click.' },
+  { href: 'blog-meesho-catalog-upload.html', title: 'Meesho Catalog Upload Guide', blurb: 'Upload your first catalog correctly and avoid rejections.' },
+  { href: 'blog-first-100-sales.html', title: 'How to Get Your First 100 Sales', blurb: 'A focused playbook for new Amazon and Flipkart sellers.' }
+];
+
+function injectBlogLinks() {
+  const robots = (document.querySelector('meta[name="robots"]')?.content || '').toLowerCase();
+  if (robots.includes('noindex')) return;
+  const path = location.pathname.replace(/^\//, '');
+  if (path.startsWith('blog')) return; // blog pages already cross-link
+  const main = document.querySelector('main .wrap');
+  if (!main || document.getElementById('blogLinks')) return;
+
+  const section = document.createElement('section');
+  section.id = 'blogLinks';
+  section.className = 'seo-section card';
+  const h2 = document.createElement('h2');
+  h2.textContent = 'From the SaleSmart AI blog';
+  section.appendChild(h2);
+  const grid = document.createElement('div');
+  grid.className = 'seo-link-grid';
+  BLOG_LINKS.forEach(item => {
+    const a = document.createElement('a');
+    a.href = item.href;
+    const strong = document.createElement('strong');
+    strong.textContent = item.title;
+    const span = document.createElement('span');
+    span.textContent = item.blurb;
+    a.append(strong, span);
+    grid.appendChild(a);
+  });
+  section.appendChild(grid);
+  main.appendChild(section);
+}
+
 async function init() {
   initAccessibility();
   bindActions();
   enhanceSeoMeta();
   injectStructuredData();
+  injectBlogLinks();
   initAnalyticsConsent();
   registerServiceWorker();
   initSupabase();
