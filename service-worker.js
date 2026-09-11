@@ -10,7 +10,7 @@ const CORE_ASSETS = [
   '/offline.html',
   '/assets/styles.css?v=20260910a',
   '/assets/app.js?v=20260910a',
-  '/assets/config.js?v=20260705c',
+  '/assets/config.js?v=20260910a',
   '/assets/favicon.svg?v=20260705c',
   '/assets/icon-192.png',
   '/assets/icon-512.png'

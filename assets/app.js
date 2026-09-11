@@ -1,7 +1,8 @@
 const CONFIG = {
   supabaseUrl: window.SALESMART_SUPABASE_URL || '',
   supabaseAnonKey: window.SALESMART_SUPABASE_ANON_KEY || '',
-  razorpayKeyId: window.SALESMART_RAZORPAY_KEY_ID || ''
+  razorpayKeyId: window.SALESMART_RAZORPAY_KEY_ID || '',
+  adsenseClient: window.SALESMART_ADSENSE_CLIENT || ''
 };
 
 const CREDIT_KEY = 'salesmart_credit_balance';
@@ -365,6 +366,20 @@ async function isPaidUser() {
   return !error && Array.isArray(data) && data.length > 0;
 }
 
+function loadAdsense() {
+  const client = CONFIG.adsenseClient;
+  // Only load with a real publisher ID, and never on noindex admin/internal pages.
+  if (!client || !client.startsWith('ca-pub-')) return;
+  if (document.querySelector('meta[name="robots"]')?.content?.toLowerCase().includes('noindex')) return;
+  if (document.querySelector('script[data-salesmart-ads]')) return;
+  const script = document.createElement('script');
+  script.async = true;
+  script.src = `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${encodeURIComponent(client)}`;
+  script.crossOrigin = 'anonymous';
+  script.setAttribute('data-salesmart-ads', '');
+  document.head.appendChild(script);
+}
+
 const UPGRADE_DISMISS_KEY = 'salesmart_upgrade_dismissed';
 
 function buildUpgradeBanner() {
@@ -404,11 +419,14 @@ function buildUpgradeBanner() {
 }
 
 async function initPaidFeatures() {
+  const paid = await isPaidUser();
+
+  // Show ads to everyone except paying customers (logged-out + free/trial).
+  if (!paid) loadAdsense();
+
   const input = document.getElementById('productImage');
   const onTool = !!document.body.dataset.tool;
   if (!input && !onTool) return;
-
-  const paid = await isPaidUser();
 
   // Lock the product-photo input for non-paid users.
   if (input && !paid) {
@@ -731,6 +749,66 @@ async function copyOutput() {
   }
 }
 
+const LISTING_SECTIONS = [
+  'Optimized Title',
+  '5 High-Converting Bullet Points',
+  'Product Description',
+  'Amazon India Search Keywords',
+  'Backend Keyword Ideas',
+  'Target Customer',
+  'Suggested HSN Code and GST Rate',
+  'Pricing and Positioning Notes',
+  'Image Suggestions',
+  'Marketplace Improvement Tips'
+];
+
+function csvCell(value) {
+  const clean = String(value == null ? '' : value).replace(/\r?\n/g, '\n');
+  return `"${clean.replace(/"/g, '""')}"`;
+}
+
+function parseListingSections(text) {
+  const known = new Map(LISTING_SECTIONS.map(s => [s.toLowerCase(), s]));
+  const rows = [];
+  let current = null;
+  String(text || '').split('\n').forEach(line => {
+    const key = line.trim().replace(/[:\s]+$/, '').toLowerCase();
+    if (known.has(key)) {
+      current = { section: known.get(key), content: [] };
+      rows.push(current);
+    } else if (current) {
+      current.content.push(line);
+    }
+  });
+  return rows.map(r => ({ section: r.section, content: r.content.join('\n').trim() }))
+    .filter(r => r.content);
+}
+
+function downloadOutputCsv() {
+  const text = document.getElementById('toolOutput')?.textContent || '';
+  if (!text.trim() || text.trim() === 'Generated listing appears here.') {
+    return show('toolNote', 'Generate a listing first, then download the CSV.', 'bad');
+  }
+  const product = document.getElementById('productName')?.value.trim() || 'listing';
+  const sections = parseListingSections(text);
+  const rows = sections.length ? sections : [{ section: 'Listing', content: text.trim() }];
+  const header = ['Product', 'Section', 'Content'];
+  const lines = [header.map(csvCell).join(',')];
+  rows.forEach(r => lines.push([csvCell(product), csvCell(r.section), csvCell(r.content)].join(',')));
+  const csv = '﻿' + lines.join('\r\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  const slug = product.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40) || 'listing';
+  link.href = url;
+  link.download = `salesmart-${slug}.csv`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  show('toolNote', 'CSV downloaded.', 'good');
+}
+
 function loadAnalytics() {
   if (document.querySelector('script[data-salesmart-analytics]')) return;
   window.dataLayer = window.dataLayer || [];
@@ -837,6 +915,7 @@ function bindActions() {
     if (action === 'load-admin') loadAdmin();
     if (action === 'generate-ai') generateAI();
     if (action === 'copy-output') copyOutput();
+    if (action === 'download-csv') downloadOutputCsv();
     if (action === 'accept-analytics') dismissConsent('granted');
     if (action === 'decline-analytics') dismissConsent('denied');
     if (action === 'reset-analytics') {
