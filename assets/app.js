@@ -355,6 +355,33 @@ async function loadOrders() {
   });
 }
 
+async function isPaidUser() {
+  if (!supabaseClient || !getEmail()) return false;
+  const { data, error } = await supabaseClient
+    .from('orders')
+    .select('id')
+    .eq('status', 'paid')
+    .limit(1);
+  return !error && Array.isArray(data) && data.length > 0;
+}
+
+async function initImageGate() {
+  const input = document.getElementById('productImage');
+  if (!input) return;
+  const hint = input.parentElement?.querySelector('p.faint');
+  if (await isPaidUser()) return;
+  input.disabled = true;
+  input.value = '';
+  if (hint) {
+    hint.textContent = '';
+    hint.append('Image-to-listing is a paid feature. ');
+    const link = document.createElement('a');
+    link.href = 'pricing.html';
+    link.textContent = 'Buy a credit pack to unlock it.';
+    hint.appendChild(link);
+  }
+}
+
 async function loadAdmin() {
   const token = await getSessionToken();
   if (!token) return show('adminNote', 'Log in with an authorized administrator account first.', 'bad');
@@ -1009,6 +1036,7 @@ async function init() {
   initPasswordReset();
   loadCredits();
   loadOrders();
+  initImageGate();
 }
 document.addEventListener('DOMContentLoaded', init);
 

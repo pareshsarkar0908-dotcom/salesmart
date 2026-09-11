@@ -67,6 +67,20 @@ async function callRpc(supabaseUrl, serviceKey, name, body) {
   return response.json().catch(() => []);
 }
 
+async function hasPaidPlan(supabaseUrl, serviceKey, userId) {
+  try {
+    const response = await fetch(
+      `${supabaseUrl}/rest/v1/orders?user_id=eq.${encodeURIComponent(userId)}&status=eq.paid&select=id&limit=1`,
+      { headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` } }
+    );
+    if (!response.ok) return false;
+    const rows = await response.json().catch(() => []);
+    return Array.isArray(rows) && rows.length > 0;
+  } catch {
+    return false;
+  }
+}
+
 async function refundReservation(supabaseUrl, serviceKey, requestId, fallbackBalance) {
   try {
     const rows = await callRpc(supabaseUrl, serviceKey, 'refund_credit', {
@@ -128,6 +142,13 @@ export default async function handler(req, res) {
       }
       image = { mimeType, data };
     }
+  }
+
+  // Image-to-listing is a paid-plan feature. Reject before reserving a credit.
+  if (image && !(await hasPaidPlan(supabaseUrl, serviceKey, user.id))) {
+    return res.status(403).json({
+      error: 'Product photo input is available on paid plans. Buy any credit pack to unlock image-to-listing.'
+    });
   }
 
   const requestId = crypto.randomUUID();
