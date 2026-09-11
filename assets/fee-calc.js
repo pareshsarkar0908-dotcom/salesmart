@@ -1,12 +1,12 @@
 // SaleSmart AI - Seller fee, profit & RTO calculator for all marketplaces.
-// Client-side, no credits. All fees are editable estimates; real rate cards
-// vary by category, weight, zone and account. For guidance only.
+// Client-side, no credits. Estimates based on 2026 rate cards (incl. Amazon &
+// Flipkart 0% referral under Rs 1,000, Meesho 0% commission, Flipkart fashion
+// 0%). Real fees vary by category and account - confirm in your seller panel.
 (function () {
-  // Platforms: factor scales category commission; ownStore uses a flat payment fee.
   const PLATFORMS = {
     'Amazon India':  { factor: 1.0 },
     'Flipkart':      { factor: 1.0 },
-    'Meesho':        { factor: 0.15 },
+    'Meesho':        { factor: 0 },
     'JioMart':       { factor: 0.8 },
     'Myntra':        { factor: 1.3 },
     'Ajio':          { factor: 1.3 },
@@ -27,7 +27,7 @@
     'Amazon Global': { factor: 1.2 }
   };
 
-  // Base category commission % (before platform factor).
+  // Generic base commission % per category (used by non-big-3 platforms).
   const CATEGORIES = {
     'Fashion & Apparel': 15,
     'Electronics': 8,
@@ -42,7 +42,20 @@
     'Other': 12
   };
 
-  // Forward shipping base (INR) by weight slab, before zone multiplier.
+  // Category commission % above the zero-fee threshold, tuned per big-3 platform.
+  const AMAZON = { 'Fashion & Apparel': 17, 'Electronics': 8, 'Home & Kitchen': 12,
+    'Beauty & Personal Care': 15, 'Grocery & Gourmet': 6, 'Books & Stationery': 9,
+    'Toys & Baby': 12, 'Sports & Fitness': 13, 'Jewellery & Accessories': 15,
+    'Health & Wellness': 15, 'Other': 12 };
+  const FLIPKART = { 'Fashion & Apparel': 0, 'Electronics': 8, 'Home & Kitchen': 12,
+    'Beauty & Personal Care': 15, 'Grocery & Gourmet': 8, 'Books & Stationery': 10,
+    'Toys & Baby': 12, 'Sports & Fitness': 12, 'Jewellery & Accessories': 20,
+    'Health & Wellness': 14, 'Other': 12 };
+
+  const ZERO_FEE_UNDER = 1000; // Amazon + Flipkart: 0% referral below this price
+  const OWN_STORE_FEE = 2;     // % payment gateway for Shopify/WooCommerce
+  const GST = 18;              // % GST on marketplace fees
+
   function shipBase(grams) {
     if (grams <= 500) return 45;
     if (grams <= 1000) return 65;
@@ -51,8 +64,33 @@
     return 150 + Math.ceil((grams - 5000) / 1000) * 22;
   }
   const ZONES = { 'Local': 1.0, 'Regional': 1.35, 'National': 1.7 };
-  const OWN_STORE_FEE = 2;   // % payment gateway for Shopify/WooCommerce
-  const GST = 18;            // % GST on marketplace fees
+
+  function commissionPct(platform, category, price) {
+    const p = PLATFORMS[platform] || { factor: 1 };
+    if (platform === 'Meesho') return 0;
+    if (p.ownStore) return OWN_STORE_FEE;
+    if (platform === 'Amazon India') {
+      if (price < ZERO_FEE_UNDER) return 0;
+      return AMAZON[category] != null ? AMAZON[category] : 12;
+    }
+    if (platform === 'Flipkart') {
+      if (category === 'Fashion & Apparel') return 0;      // fashion always 0%
+      if (price < ZERO_FEE_UNDER) return 0;
+      return FLIPKART[category] != null ? FLIPKART[category] : 12;
+    }
+    return Math.round((CATEGORIES[category] || 12) * p.factor * 10) / 10;
+  }
+
+  // Fixed / closing fee (value-based) for Amazon & Flipkart.
+  function fixedFee(platform, price) {
+    if (platform === 'Flipkart') return price <= 300 ? 15 : price <= 750 ? 30 : 45;
+    if (platform === 'Amazon India') return price < 500 ? 20 : price <= 1000 ? 30 : 45;
+    return 0;
+  }
+  // Collection fee: Flipkart ~2% of order value.
+  function collectionFee(platform, price) {
+    return platform === 'Flipkart' ? price * 0.02 : 0;
+  }
 
   const $ = id => document.getElementById(id);
   const inr = n => '₹' + (isFinite(n) ? n : 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -69,19 +107,19 @@
     const packaging = num($('fcPackaging').value);
     const rtoOn = $('fcRtoToggle').checked;
 
-    const p = PLATFORMS[platform] || { factor: 1 };
-    let commissionPct;
-    if (p.ownStore) commissionPct = OWN_STORE_FEE;
-    else commissionPct = Math.round((CATEGORIES[category] || 12) * p.factor * 10) / 10;
-
-    const commission = price * commissionPct / 100;
+    const pct = commissionPct(platform, category, price);
+    const commission = price * pct / 100;
+    const fixed = fixedFee(platform, price);
+    const collection = collectionFee(platform, price);
     const forwardShip = Math.round(shipBase(grams) * (ZONES[zone] || 1));
-    const gstOnFees = (commission + forwardShip) * GST / 100;
+    const feeBase = commission + fixed + collection + forwardShip;
+    const gstOnFees = feeBase * GST / 100;
     const rtoCost = rtoOn ? Math.round(forwardShip * 1.8) : 0;
 
-    const totalFees = commission + forwardShip + gstOnFees + rtoCost + packaging;
-    const settlement = price - commission - forwardShip - gstOnFees - rtoCost;
-    const netPayout = price - commission - forwardShip - gstOnFees;
+    const deductions = commission + fixed + collection + forwardShip + gstOnFees + rtoCost;
+    const totalFees = deductions + packaging;
+    const settlement = price - deductions;
+    const netPayout = price - (deductions - rtoCost);
     const profit = settlement - cogs - packaging;
     const profitPct = price > 0 ? (profit / price) * 100 : 0;
 
@@ -92,7 +130,8 @@
 
     out('fcRowShip', inr(forwardShip));
     out('fcRowCommission', inr(commission));
-    out('fcCommissionPct', commissionPct + '%');
+    out('fcCommissionPct', pct + '%');
+    out('fcRowFixed', inr(fixed + collection));
     out('fcRowGst', inr(gstOnFees));
     out('fcRowRto', rtoOn ? '−' + inr(rtoCost).slice(1) : inr(0));
     out('fcRowPackaging', inr(packaging));
