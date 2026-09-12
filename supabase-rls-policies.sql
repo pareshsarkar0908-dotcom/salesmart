@@ -537,7 +537,7 @@ begin
     return v_code;
   end if;
   loop
-    v_code := substr(encode(gen_random_bytes(6), 'hex'), 1, 8);
+    v_code := substr(md5(random()::text || clock_timestamp()::text || p_user_id::text), 1, 8);
     begin
       insert into referral_codes(user_id, code) values (p_user_id, v_code);
       return v_code;
